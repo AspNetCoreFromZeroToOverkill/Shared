@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28531.58
+MinimumVisualStudioVersion = 15.0.26124.0
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{801DD3DA-8921-4F4C-A662-565C3D4726E9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodingMilitia.PlayBall.Shared.StartupTasks", "src\CodingMilitia.PlayBall.Shared.StartupTasks\CodingMilitia.PlayBall.Shared.StartupTasks.csproj", "{81A3B007-B5F8-462F-9B4F-03D05F9C7184}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{81A3B007-B5F8-462F-9B4F-03D05F9C7184}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81A3B007-B5F8-462F-9B4F-03D05F9C7184}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81A3B007-B5F8-462F-9B4F-03D05F9C7184}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81A3B007-B5F8-462F-9B4F-03D05F9C7184}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{81A3B007-B5F8-462F-9B4F-03D05F9C7184} = {801DD3DA-8921-4F4C-A662-565C3D4726E9}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FA96B40F-5E9E-428C-8874-03F0AA69644B}
+	EndGlobalSection
+EndGlobal
