@@ -1,4 +1,4 @@
-var target = Argument("target", "Default");
+var target = Argument("target", "Build");
 
 Task("Clean")
 	.Does(() => 
@@ -15,6 +15,7 @@ Task("Clean")
 });
 
 Task("Build")
+	.IsDependentOn("Clean")
 	.Does(() => 
 {
 	var settings = new DotNetCoreBuildSettings
@@ -27,10 +28,5 @@ Task("Build")
      DotNetCoreBuild("./src/CodingMilitia.PlayBall.Shared.StartupTasks", settings);
 });
 
-Task("Default")
-  .Does(() =>
-{
-  Information("Hello World!");
-});
 
 RunTarget(target);
