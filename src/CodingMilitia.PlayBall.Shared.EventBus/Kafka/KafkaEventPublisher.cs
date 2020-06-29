@@ -55,7 +55,7 @@ namespace CodingMilitia.PlayBall.Shared.EventBus.Kafka
 
         public async Task PublishAsync(IEnumerable<TEvent> events, CancellationToken ct)
         {
-            // TODO: check out if there's some batch optimized alternative
+            // could be interesting to improve if there's some batch optimized alternative
 
             foreach (var @event in events)
             {

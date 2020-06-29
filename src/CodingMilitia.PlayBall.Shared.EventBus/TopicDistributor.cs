@@ -54,21 +54,27 @@ namespace CodingMilitia.PlayBall.Shared.EventBus
             await publisher.PublishAsync((TTopicEventBase) @event, ct);
         }
 
-        private async Task InnerPublishMultipleAsync<TTopicEventBase>(IEnumerable<TServiceEventRoot> events, CancellationToken ct)
+        private async Task InnerPublishMultipleAsync<TTopicEventBase>(
+            IEnumerable<TServiceEventRoot> events,
+            CancellationToken ct)
             where TTopicEventBase : TServiceEventRoot
         {
             var publisher = _serviceProvider.GetRequiredService<IEventPublisher<TTopicEventBase>>();
             await publisher.PublishAsync(events.Cast<TTopicEventBase>(), ct);
         }
-        
-        private static ReadOnlyDictionary<Type, Type> CreateEventToBaseEventMap(IReadOnlyCollection<Type> baseEventTypes)
+
+        private static ReadOnlyDictionary<Type, Type> CreateEventToBaseEventMap(
+            IReadOnlyCollection<Type> baseEventTypes)
         {
             var eventToBaseEventMap = new Dictionary<Type, Type>();
 
             foreach (var baseEventType in baseEventTypes)
             {
-                var derivedTypes = baseEventType.Assembly.GetTypes().Where(
-                    type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(baseEventType));
+                var derivedTypes =
+                    baseEventType
+                        .Assembly
+                        .GetTypes()
+                        .Where(type => type.IsClass && !type.IsAbstract && type.IsSubclassOf(baseEventType));
 
                 foreach (var derivedType in derivedTypes)
                 {
@@ -78,52 +84,64 @@ namespace CodingMilitia.PlayBall.Shared.EventBus
 
             return new ReadOnlyDictionary<Type, Type>(eventToBaseEventMap);
         }
-        
+
         // over-engineering incoming!
         private (ReadOnlyDictionary<Type, Func<TServiceEventRoot, CancellationToken, Task>>,
-                ReadOnlyDictionary<Type, Func<IEnumerable<TServiceEventRoot>, CancellationToken, Task>>)
-                CreateEventPublisherMaps(IReadOnlyCollection<Type> baseEventTypes)
+            ReadOnlyDictionary<Type, Func<IEnumerable<TServiceEventRoot>, CancellationToken, Task>>)
+            CreateEventPublisherMaps(IReadOnlyCollection<Type> baseEventTypes)
+        {
+            // map concrete InnerPublishSingleAsync and InnerPublishMultipleAsync to the types they should be used with
+
+            var singleEventPublisherMap = new Dictionary<Type, Func<TServiceEventRoot, CancellationToken, Task>>();
+            var multipleEventPublisherMap =
+                new Dictionary<Type, Func<IEnumerable<TServiceEventRoot>, CancellationToken, Task>>();
+
+            foreach (var baseEventType in baseEventTypes)
             {
-                // map concrete InnerPublishSingleAsync and InnerPublishMultipleAsync to the types they should be used with
-                
-                var singleEventPublisherMap = new Dictionary<Type, Func<TServiceEventRoot, CancellationToken, Task>>();
-                var multipleEventPublisherMap = new Dictionary<Type, Func<IEnumerable<TServiceEventRoot>, CancellationToken, Task>>();
-                
-                foreach (var baseEventType in baseEventTypes)
-                {
-                    var thisExpression = Expression.Constant(this);
-                    var eventParameterExpression = Expression.Parameter(typeof(TServiceEventRoot));
-                    var eventsParameterExpression = Expression.Parameter(typeof(IEnumerable<TServiceEventRoot>));
-                    var ctParameterExpression = Expression.Parameter(typeof(CancellationToken));
-                    
-                    var publishSingleMethod =  GetType()
-                        .GetMethod(nameof(InnerPublishSingleAsync), BindingFlags.Instance | BindingFlags.NonPublic)
-                        .MakeGenericMethod(baseEventType);
+                var thisExpression = Expression.Constant(this);
+                var eventParameterExpression = Expression.Parameter(typeof(TServiceEventRoot));
+                var eventsParameterExpression = Expression.Parameter(typeof(IEnumerable<TServiceEventRoot>));
+                var ctParameterExpression = Expression.Parameter(typeof(CancellationToken));
 
-                    var publishSingleLambda =
-                        Expression.Lambda<Func<TServiceEventRoot, CancellationToken, Task>>(
-                            Expression.Call(thisExpression, publishSingleMethod, eventParameterExpression, ctParameterExpression),
-                            eventParameterExpression, ctParameterExpression)
-                            .Compile();
-                    
-                    singleEventPublisherMap.Add(baseEventType, publishSingleLambda);
-                    
-                    var publishMultipleMethod =  GetType()
-                        .GetMethod(nameof(InnerPublishMultipleAsync), BindingFlags.Instance | BindingFlags.NonPublic)
-                        .MakeGenericMethod(baseEventType);
-                    
-                    var publishMultipleLambda =
-                        Expression.Lambda<Func<IEnumerable<TServiceEventRoot>, CancellationToken, Task>>(
-                                Expression.Call(thisExpression, publishMultipleMethod, eventsParameterExpression, ctParameterExpression),
-                                eventsParameterExpression, ctParameterExpression)
-                            .Compile();
-                    
-                    multipleEventPublisherMap.Add(baseEventType, publishMultipleLambda);
-                }
+                var publishSingleMethod = GetType()
+                    .GetMethod(nameof(InnerPublishSingleAsync), BindingFlags.Instance | BindingFlags.NonPublic)
+                    .MakeGenericMethod(baseEventType);
 
-                return (
-                    new ReadOnlyDictionary<Type, Func<TServiceEventRoot, CancellationToken, Task>>(singleEventPublisherMap),
-                    new ReadOnlyDictionary<Type, Func<IEnumerable<TServiceEventRoot>, CancellationToken, Task>>(multipleEventPublisherMap));
+                var publishSingleLambda =
+                    Expression.Lambda<Func<TServiceEventRoot, CancellationToken, Task>>(
+                            Expression.Call(
+                                thisExpression,
+                                publishSingleMethod,
+                                eventParameterExpression,
+                                ctParameterExpression),
+                            eventParameterExpression,
+                            ctParameterExpression)
+                        .Compile();
+
+                singleEventPublisherMap.Add(baseEventType, publishSingleLambda);
+
+                var publishMultipleMethod = GetType()
+                    .GetMethod(nameof(InnerPublishMultipleAsync), BindingFlags.Instance | BindingFlags.NonPublic)
+                    .MakeGenericMethod(baseEventType);
+
+                var publishMultipleLambda =
+                    Expression.Lambda<Func<IEnumerable<TServiceEventRoot>, CancellationToken, Task>>(
+                            Expression.Call(
+                                thisExpression,
+                                publishMultipleMethod,
+                                eventsParameterExpression,
+                                ctParameterExpression),
+                            eventsParameterExpression,
+                            ctParameterExpression)
+                        .Compile();
+
+                multipleEventPublisherMap.Add(baseEventType, publishMultipleLambda);
             }
+
+            return (
+                new ReadOnlyDictionary<Type, Func<TServiceEventRoot, CancellationToken, Task>>(singleEventPublisherMap),
+                new ReadOnlyDictionary<Type, Func<IEnumerable<TServiceEventRoot>, CancellationToken, Task>>(
+                    multipleEventPublisherMap));
+        }
     }
 }
